@@ -161,7 +161,7 @@ class ApiService {
       body: jsonEncode({
         'eventId': eventId,
         'email': email,
-        'source': 'app',
+        'source': 'mobile',
       }),
     );
 
@@ -172,4 +172,29 @@ class ApiService {
     
     return jsonDecode(response.body);
   }
+
+  Future<Map<String, dynamic>> verifyQrAttendance(String encryptedData, String eventId) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/attendance/verify-qr'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({
+        'encryptedData': encryptedData,
+        'eventId': eventId,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to verify QR code');
+    }
+    
+    return jsonDecode(response.body);
+  }
 }
+

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'dart:convert';
 import '../services/api_service.dart';
 
 class QrScanScreen extends StatefulWidget {
@@ -30,17 +29,13 @@ class _QrScanScreenState extends State<QrScanScreen> {
       });
 
       try {
-        final data = jsonDecode(barcode.rawValue!);
-        final email = data['email'];
-        final eventId = data['eventId'];
-
-        if (eventId != widget.eventId) {
-          throw Exception('This QR code is for a different event');
-        }
-
-        final response = await _apiService.markAttendance(widget.eventId, email);
+        // Send encrypted QR data directly to server for validation
+        final encryptedData = barcode.rawValue!;
+        final response = await _apiService.verifyQrAttendance(encryptedData, widget.eventId);
         
         if (!mounted) return;
+        
+        // Server already validates eventId, so we just process success
         
         setState(() {
           _lastScannedAttendee = response['attendance'];
