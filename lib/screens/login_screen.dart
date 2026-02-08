@@ -69,7 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
       print('Login successful');
-      // Navigation will be handled by the wrapper in main.dart
+      
+      // Navigate back to AuthWrapper which will show the dashboard
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       print('Login error: $e');
       if (!mounted) return;
@@ -92,6 +95,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A), // Slate 900
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
