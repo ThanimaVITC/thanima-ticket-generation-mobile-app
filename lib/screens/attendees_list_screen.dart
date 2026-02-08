@@ -112,15 +112,26 @@ class _AttendeesListScreenState extends State<AttendeesListScreen> with SingleTi
 
   Widget _buildList(List<Registration> registrations) {
     if (registrations.isEmpty) {
-      return const Center(
-        child: Text(
-          'No attendees found',
-          style: TextStyle(color: Colors.grey),
+      return RefreshIndicator(
+        onRefresh: _loadRegistrations,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 200),
+            Center(
+              child: Text(
+                'No attendees found',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
         ),
       );
     }
 
-    return ListView.builder(
+    return RefreshIndicator(
+      onRefresh: _loadRegistrations,
+      child: ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: registrations.length,
       itemBuilder: (context, index) {
@@ -169,6 +180,7 @@ class _AttendeesListScreenState extends State<AttendeesListScreen> with SingleTi
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 }

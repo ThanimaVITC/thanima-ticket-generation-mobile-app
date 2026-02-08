@@ -151,78 +151,90 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
                         ),
                       )
                     : _filteredRegistrations.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No attendees found',
-                              style: TextStyle(color: Colors.grey),
+                        ? RefreshIndicator(
+                            onRefresh: _loadRegistrations,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: const [
+                                SizedBox(height: 200),
+                                Center(
+                                  child: Text(
+                                    'No attendees found',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                              ],
                             ),
                           )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _filteredRegistrations.length,
-                            itemBuilder: (context, index) {
-                              final reg = _filteredRegistrations[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                color: const Color(0xFF1E293B),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  title: Text(
-                                    reg.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                        : RefreshIndicator(
+                            onRefresh: _loadRegistrations,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filteredRegistrations.length,
+                              itemBuilder: (context, index) {
+                                final reg = _filteredRegistrations[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  color: const Color(0xFF1E293B),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    title: Text(
+                                      reg.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        reg.regNo,
-                                        style: const TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        reg.email,
-                                        style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: reg.attended
-                                      ? Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.green.withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(20),
-                                            border: Border.all(color: Colors.green.withOpacity(0.5)),
-                                          ),
-                                          child: const Text(
-                                            'Attended',
-                                            style: TextStyle(
-                                              color: Colors.green,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        )
-                                      : ElevatedButton(
-                                          onPressed: () => _markAttendance(reg),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.purple,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                          ),
-                                          child: const Text('Mark'),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          reg.regNo,
+                                          style: const TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold),
                                         ),
-                                ),
-                              );
-                            },
+                                        Text(
+                                          reg.email,
+                                          style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: reg.attended
+                                        ? Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: Colors.green.withOpacity(0.5)),
+                                            ),
+                                            child: const Text(
+                                              'Attended',
+                                              style: TextStyle(
+                                                color: Colors.green,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                        : ElevatedButton(
+                                            onPressed: () => _markAttendance(reg),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.purple,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                            ),
+                                            child: const Text('Mark'),
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
           ),
         ],
