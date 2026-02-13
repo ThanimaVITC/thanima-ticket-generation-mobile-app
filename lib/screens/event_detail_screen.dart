@@ -129,7 +129,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 16),
 
                   _buildActionTile(
                     'Scan QR Code',
@@ -140,6 +139,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => QrScanScreen(eventId: widget.eventId),
+                      ),
+                    ).then((_) => _refreshEventDetails()),
+                  ),
+
+                  const SizedBox(height: 16),
+                  _buildActionTile(
+                    'Assign Tickets',
+                    'Assign QR tickets to registered users',
+                    Icons.qr_code,
+                    Colors.purple,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AssignTicketScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
@@ -166,19 +179,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AttendeesListScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
-                  ),
-
-                  _buildActionTile(
-                    'Assign Tickets',
-                    'Assign QR tickets to registered users',
-                    Icons.qr_code,
-                    Colors.purple,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AssignTicketScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
