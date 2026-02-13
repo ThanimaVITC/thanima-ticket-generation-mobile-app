@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import 'qr_scan_screen.dart';
 import 'manual_attendance_screen.dart';
 import 'attendees_list_screen.dart';
+import 'assign_ticket_screen.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final String eventId;
@@ -165,6 +166,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AttendeesListScreen(eventId: widget.eventId),
+                      ),
+                    ).then((_) => _refreshEventDetails()),
+                  ),
+
+                  _buildActionTile(
+                    'Assign Tickets',
+                    'Assign QR tickets to registered users',
+                    Icons.qr_code,
+                    Colors.purple,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AssignTicketScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),

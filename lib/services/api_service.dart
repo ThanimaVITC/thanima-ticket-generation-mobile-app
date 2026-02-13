@@ -196,5 +196,48 @@ class ApiService {
     
     return jsonDecode(response.body);
   }
+
+  Future<List<Map<String, dynamic>>> getRegistrations(String eventId) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+    
+    final response = await http.get(
+      Uri.parse('$baseUrl/registrations/$eventId'),
+      headers: {
+        'Cookie': 'auth-token=$token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data['registrations']);
+    } else {
+      throw Exception('Failed to load registrations');
+    }
+  }
+
+  Future<Map<String, dynamic>> assignQrPayload(String eventId, String registrationId, String qrPayload) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+    
+    final response = await http.put(
+      Uri.parse('$baseUrl/registrations/$eventId/assign-qr'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({
+        'registrationId': registrationId,
+        'qrPayload': qrPayload,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to assign QR payload');
+    }
+    
+    return jsonDecode(response.body);
+  }
 }
 
