@@ -130,19 +130,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ),
                   ),
 
-                  _buildActionTile(
-                    'Scan QR Code',
-                    'Scan attendee QR code to mark attendance',
-                    Icons.qr_code_scanner,
-                    Colors.orange,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => QrScanScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
-                  ),
-
                   const SizedBox(height: 16),
                   _buildActionTile(
                     'Assign Tickets',
@@ -153,6 +140,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AssignTicketScreen(eventId: widget.eventId),
+                      ),
+                    ).then((_) => _refreshEventDetails()),
+                  ),
+
+                  _buildActionTile(
+                    'Scan QR Code',
+                    'Scan attendee QR code to mark attendance',
+                    Icons.qr_code_scanner,
+                    Colors.orange,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QrScanScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
@@ -169,7 +169,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
-                  
                   _buildActionTile(
                     'View Attendees',
                     'List all registrations and attendance status',
