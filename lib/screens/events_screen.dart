@@ -5,6 +5,7 @@ import '../models/event.dart';
 import '../services/api_service.dart';
 import '../providers/auth_provider.dart';
 import 'event_detail_screen.dart';
+import 'profile_screen.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -34,14 +35,20 @@ class _EventsScreenState extends State<EventsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Events', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Events',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.account_circle),
             onPressed: () {
-              Provider.of<AuthProvider>(context, listen: false).logout();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
             },
           ),
         ],
@@ -133,10 +140,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   event.description!,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -144,7 +148,11 @@ class _EventsScreenState extends State<EventsScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: Colors.purple),
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: Colors.purple,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     DateFormat('MMM d, y • h:mm a').format(event.date),
@@ -156,7 +164,11 @@ class _EventsScreenState extends State<EventsScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.purple),
+                    const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.purple,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       event.location!,

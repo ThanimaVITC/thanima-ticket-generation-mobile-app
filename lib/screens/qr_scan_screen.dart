@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/api_service.dart';
+import '../services/sound_service.dart';
 
 class QrScanScreen extends StatefulWidget {
   final String eventId;
@@ -13,6 +14,7 @@ class QrScanScreen extends StatefulWidget {
 
 class _QrScanScreenState extends State<QrScanScreen> {
   final ApiService _apiService = ApiService();
+  final SoundService _soundService = SoundService();
   bool _isProcessing = false;
   Map<String, dynamic>? _lastScannedAttendee;
   MobileScannerController cameraController = MobileScannerController();
@@ -31,19 +33,25 @@ class _QrScanScreenState extends State<QrScanScreen> {
       try {
         // Send encrypted QR data directly to server for validation
         final encryptedData = barcode.rawValue!;
-        final response = await _apiService.verifyQrAttendance(encryptedData, widget.eventId);
-        
+        final response = await _apiService.verifyQrAttendance(
+          encryptedData,
+          widget.eventId,
+        );
+
         if (!mounted) return;
-        
+
         // Server already validates eventId, so we just process success
-        
+
         setState(() {
           _lastScannedAttendee = response['attendance'];
         });
-        
+
+        _soundService.playSuccess();
+
         // Wait a bit to show the success message
         await Future.delayed(const Duration(seconds: 2));
       } catch (e) {
+        _soundService.playError();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -69,7 +77,10 @@ class _QrScanScreenState extends State<QrScanScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Scan QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Scan QR Code',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
         actions: [
@@ -104,7 +115,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
                     return const Icon(Icons.camera_rear);
                   case CameraFacing.external:
                   case CameraFacing.unknown:
-                     return const Icon(Icons.camera);
+                    return const Icon(Icons.camera);
                 }
               },
             ),
@@ -127,10 +138,14 @@ class _QrScanScreenState extends State<QrScanScreen> {
               color: Color(0xFF1E293B),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: _lastScannedAttendee != null 
+            child: _lastScannedAttendee != null
                 ? ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                    leading: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 40,
+                    ),
                     title: Text(
                       _lastScannedAttendee!['name'] ?? 'Attendee',
                       style: const TextStyle(
@@ -147,7 +162,9 @@ class _QrScanScreenState extends State<QrScanScreen> {
                 : Column(
                     children: [
                       Text(
-                        _isProcessing ? 'Processing...' : 'Align QR code in the frame',
+                        _isProcessing
+                            ? 'Processing...'
+                            : 'Align QR code in the frame',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,

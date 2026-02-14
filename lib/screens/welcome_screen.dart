@@ -15,33 +15,30 @@ class WelcomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-              
+
               // Logo
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24.0),
-                child: Image.asset(
-                  'assets/thanima_logo.jpg',
+              Image.asset(
+                'assets/thanima_logo.jpg',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
                   width: 140,
                   height: 140,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(24.0),
-                    ),
-                    child: const Icon(
-                      Icons.event,
-                      size: 80,
-                      color: Colors.purple,
-                    ),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(24.0),
+                  ),
+                  child: const Icon(
+                    Icons.event,
+                    size: 80,
+                    color: Colors.purple,
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Title
               const Text(
                 'Thanima',
@@ -52,9 +49,9 @@ class WelcomeScreen extends StatelessWidget {
                   letterSpacing: 1.5,
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Subtitle
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
@@ -69,22 +66,18 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Tagline
               const Text(
                 'Seamless event check-in\nfor VIT Chennai',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                  height: 1.5,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
                 textAlign: TextAlign.center,
               ),
-              
+
               const Spacer(flex: 3),
-              
+
               // Next Button
               SizedBox(
                 width: double.infinity,
@@ -122,26 +115,20 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Footer
               const Text(
                 'thanimavitc.site',
-                style: TextStyle(
-                  color: Colors.blueAccent,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.blueAccent, fontSize: 14),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               const Text(
-                'v1.2',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
+                'v1.4',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),

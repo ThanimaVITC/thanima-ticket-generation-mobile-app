@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       print('Form validation failed');
       return;
     }
-    
+
     // Auto-fix URL if needed
     if (!_serverUrlController.text.startsWith('http')) {
       _serverUrlController.text = 'http://${_serverUrlController.text}';
@@ -64,12 +64,12 @@ class _LoginScreenState extends State<LoginScreen> {
       await _apiService.setServerUrl(_serverUrlController.text);
 
       print('Calling provider login...');
-      await Provider.of<AuthProvider>(context, listen: false).login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).login(_emailController.text, _passwordController.text);
       print('Login successful');
-      
+
       // Navigate back to AuthWrapper which will show the dashboard
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
@@ -114,18 +114,15 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Logo
                 Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16.0),
-                    child: Image.asset(
-                      'assets/thanima_logo.jpg',
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                    ),
+                  child: Image.asset(
+                    'assets/thanima_logo.jpg',
+                    width: 180,
+                    height: 180,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 const Text(
                   'Welcome Back',
                   style: TextStyle(
@@ -138,10 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'Sign in to manage attendance',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),

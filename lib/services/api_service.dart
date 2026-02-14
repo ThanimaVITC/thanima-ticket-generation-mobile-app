@@ -7,7 +7,7 @@ import '../models/registration.dart';
 
 class ApiService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  
+
   // Default fallback if nothing is saved
   static const String defaultUrl = 'http://172.20.80.212:3000/api';
 
@@ -15,11 +15,11 @@ class ApiService {
     final url = await _storage.read(key: 'server_url');
     // Ensure no trailing slash
     final cleanUrl = (url ?? defaultUrl).replaceAll(RegExp(r'/$'), '');
-    // Ensure it ends with /api if not present? 
+    // Ensure it ends with /api if not present?
     // The user input should be "http://ip:port", we append "/api"
-    // Or we expect user to enter full api path? 
+    // Or we expect user to enter full api path?
     // Let's assume user enters "http://192.168.1.5:3000". We append "/api".
-    
+
     if (cleanUrl.endsWith('/api')) {
       return cleanUrl;
     }
@@ -56,7 +56,7 @@ class ApiService {
     final fullUrl = Uri.parse('$baseUrl/auth/login');
     print('Attempting login to: $fullUrl');
     print('Email: $email');
-    
+
     try {
       final response = await http.post(
         fullUrl,
@@ -72,15 +72,18 @@ class ApiService {
       } else {
         // Try to parse error, if fails execute generic error
         try {
-           throw Exception(jsonDecode(response.body)['error'] ?? 'Login failed');
+          throw Exception(jsonDecode(response.body)['error'] ?? 'Login failed');
         } catch (e) {
-           if (e is Exception) rethrow; // If it was the specific error above
-           throw Exception('Login failed: ${response.statusCode}. Check server URL.');
+          if (e is Exception) rethrow; // If it was the specific error above
+          throw Exception(
+            'Login failed: ${response.statusCode}. Check server URL.',
+          );
         }
       }
     } catch (e) {
-      if (e.toString().contains('SocketException') || e.toString().contains('Connection refused')) {
-         throw Exception('Could not connect to server. Check URL and internet.');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        throw Exception('Could not connect to server. Check URL and internet.');
       }
       rethrow;
     }
@@ -94,9 +97,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/auth/me'),
-        headers: {
-          'Cookie': 'auth-token=$token',
-        },
+        headers: {'Cookie': 'auth-token=$token'},
       );
 
       if (response.statusCode == 200) {
@@ -114,12 +115,10 @@ class ApiService {
   Future<List<Event>> getEvents() async {
     final token = await getToken();
     final baseUrl = await _getBaseUrl();
-    
+
     final response = await http.get(
       Uri.parse('$baseUrl/events'),
-      headers: {
-        'Cookie': 'auth-token=$token',
-      },
+      headers: {'Cookie': 'auth-token=$token'},
     );
 
     if (response.statusCode == 200) {
@@ -133,12 +132,10 @@ class ApiService {
   Future<Map<String, dynamic>> getEventDetails(String eventId) async {
     final token = await getToken();
     final baseUrl = await _getBaseUrl();
-    
+
     final response = await http.get(
       Uri.parse('$baseUrl/events/$eventId'),
-      headers: {
-        'Cookie': 'auth-token=$token',
-      },
+      headers: {'Cookie': 'auth-token=$token'},
     );
 
     if (response.statusCode == 200) {
@@ -148,15 +145,18 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> markAttendance(String eventId, String email) async {
+  Future<Map<String, dynamic>> markAttendance(
+    String eventId,
+    String email,
+  ) async {
     final token = await getToken();
     final baseUrl = await _getBaseUrl();
-    
+
     final response = await http.post(
       Uri.parse('$baseUrl/attendance/mark'),
       headers: {
         'Content-Type': 'application/json',
-         'Cookie': 'auth-token=$token',
+        'Cookie': 'auth-token=$token',
       },
       body: jsonEncode({
         'eventId': eventId,
@@ -169,43 +169,41 @@ class ApiService {
       final error = jsonDecode(response.body);
       throw Exception(error['error'] ?? 'Failed to mark attendance');
     }
-    
+
     return jsonDecode(response.body);
   }
 
-  Future<Map<String, dynamic>> verifyQrAttendance(String encryptedData, String eventId) async {
+  Future<Map<String, dynamic>> verifyQrAttendance(
+    String encryptedData,
+    String eventId,
+  ) async {
     final token = await getToken();
     final baseUrl = await _getBaseUrl();
-    
+
     final response = await http.post(
       Uri.parse('$baseUrl/attendance/verify-qr'),
       headers: {
         'Content-Type': 'application/json',
         'Cookie': 'auth-token=$token',
       },
-      body: jsonEncode({
-        'encryptedData': encryptedData,
-        'eventId': eventId,
-      }),
+      body: jsonEncode({'encryptedData': encryptedData, 'eventId': eventId}),
     );
 
     if (response.statusCode != 200) {
       final error = jsonDecode(response.body);
       throw Exception(error['error'] ?? 'Failed to verify QR code');
     }
-    
+
     return jsonDecode(response.body);
   }
 
   Future<List<Map<String, dynamic>>> getRegistrations(String eventId) async {
     final token = await getToken();
     final baseUrl = await _getBaseUrl();
-    
+
     final response = await http.get(
       Uri.parse('$baseUrl/registrations/$eventId'),
-      headers: {
-        'Cookie': 'auth-token=$token',
-      },
+      headers: {'Cookie': 'auth-token=$token'},
     );
 
     if (response.statusCode == 200) {
@@ -216,10 +214,14 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> assignQrPayload(String eventId, String registrationId, String qrPayload) async {
+  Future<Map<String, dynamic>> assignQrPayload(
+    String eventId,
+    String registrationId,
+    String qrPayload,
+  ) async {
     final token = await getToken();
     final baseUrl = await _getBaseUrl();
-    
+
     final response = await http.put(
       Uri.parse('$baseUrl/registrations/$eventId/assign-qr'),
       headers: {
@@ -236,8 +238,30 @@ class ApiService {
       final error = jsonDecode(response.body);
       throw Exception(error['error'] ?? 'Failed to assign QR payload');
     }
-    
+
     return jsonDecode(response.body);
   }
-}
 
+  Future<Map<String, dynamic>?> checkQrPayloadExists(
+    String eventId,
+    String qrPayload,
+  ) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.get(
+      Uri.parse(
+        '$baseUrl/registrations/$eventId/check-qr?qrPayload=$qrPayload',
+      ),
+      headers: {'Cookie': 'auth-token=$token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['exists'] == true) {
+        return data;
+      }
+    }
+    return null;
+  }
+}
