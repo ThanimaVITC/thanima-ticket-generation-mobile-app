@@ -6,6 +6,7 @@ import 'qr_scan_screen.dart';
 import 'manual_attendance_screen.dart';
 import 'attendees_list_screen.dart';
 import 'assign_ticket_screen.dart';
+import 'verify_ticket_screen.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final String eventId;
@@ -37,7 +38,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Event Details', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Event Details',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
       ),
@@ -49,7 +53,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
           }
 
           if (!snapshot.hasData) {
@@ -83,11 +92,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 16, color: Colors.purple),
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Colors.purple,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         DateFormat('MMM d, y • h:mm a').format(event.date),
-                        style: const TextStyle(color: Colors.grey, fontSize: 16),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
                       ),
                     ],
                   ),
@@ -119,7 +135,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     '${stats['attendanceRate']}%',
                     Colors.purple,
                   ),
-                  
+
                   const SizedBox(height: 40),
                   const Text(
                     'Actions',
@@ -139,7 +155,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AssignTicketScreen(eventId: widget.eventId),
+                        builder: (context) =>
+                            AssignTicketScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
@@ -152,11 +169,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => QrScanScreen(eventId: widget.eventId),
+                        builder: (context) =>
+                            QrScanScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
-                  
+
                   _buildActionTile(
                     'Manual Attendance',
                     'Mark attendance by searching name/reg no',
@@ -165,7 +183,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ManualAttendanceScreen(eventId: widget.eventId),
+                        builder: (context) =>
+                            ManualAttendanceScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
@@ -177,7 +196,21 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AttendeesListScreen(eventId: widget.eventId),
+                        builder: (context) =>
+                            AttendeesListScreen(eventId: widget.eventId),
+                      ),
+                    ).then((_) => _refreshEventDetails()),
+                  ),
+                  _buildActionTile(
+                    'Verify Ticket',
+                    'Scan and verify ticket without marking attendance',
+                    Icons.verified_user,
+                    Colors.indigo,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            VerifyTicketScreen(eventId: widget.eventId),
                       ),
                     ).then((_) => _refreshEventDetails()),
                   ),
@@ -201,10 +234,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(color: Colors.grey, fontSize: 14),
-          ),
+          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
           const SizedBox(height: 4),
           Text(
             value,
@@ -219,7 +249,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildActionTile(String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionTile(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -245,11 +281,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             fontSize: 16,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(color: Colors.grey),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey)),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          color: Colors.grey,
+          size: 16,
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
         onTap: onTap,
       ),
     );

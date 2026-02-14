@@ -264,4 +264,28 @@ class ApiService {
     }
     return null;
   }
+
+  Future<Map<String, dynamic>> verifyTicket(
+    String qrPayload,
+    String eventId,
+  ) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/tickets/verify'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({'qrPayload': qrPayload, 'eventId': eventId}),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to verify ticket');
+    }
+
+    return jsonDecode(response.body);
+  }
 }

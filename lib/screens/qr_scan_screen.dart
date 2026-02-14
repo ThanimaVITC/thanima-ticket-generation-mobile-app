@@ -16,11 +16,12 @@ class _QrScanScreenState extends State<QrScanScreen> {
   final ApiService _apiService = ApiService();
   final SoundService _soundService = SoundService();
   bool _isProcessing = false;
+  bool _scanningEnabled = true;
   Map<String, dynamic>? _lastScannedAttendee;
   MobileScannerController cameraController = MobileScannerController();
 
   Future<void> _processBarcode(BarcodeCapture capture) async {
-    if (_isProcessing) return;
+    if (_isProcessing || !_scanningEnabled) return;
 
     final List<Barcode> barcodes = capture.barcodes;
     for (final barcode in barcodes) {
@@ -28,7 +29,11 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
       setState(() {
         _isProcessing = true;
+        _scanningEnabled = false;
       });
+
+      // Stop the camera immediately after detection
+      await cameraController.stop();
 
       try {
         // Send encrypted QR data directly to server for validation
@@ -40,16 +45,20 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
         if (!mounted) return;
 
-        // Server already validates eventId, so we just process success
+        // Safely access attendance data with null checks
+        final attendance = response['attendance'];
+        if (attendance != null && attendance is Map<String, dynamic>) {
+          setState(() {
+            _lastScannedAttendee = attendance;
+          });
 
-        setState(() {
-          _lastScannedAttendee = response['attendance'];
-        });
+          _soundService.playSuccess();
 
-        _soundService.playSuccess();
-
-        // Wait a bit to show the success message
-        await Future.delayed(const Duration(seconds: 2));
+          // Show success message for 3 seconds before allowing next scan
+          await Future.delayed(const Duration(seconds: 3));
+        } else {
+          throw Exception('Invalid response from server');
+        }
       } catch (e) {
         _soundService.playError();
         if (!mounted) return;
@@ -66,9 +75,13 @@ class _QrScanScreenState extends State<QrScanScreen> {
           setState(() {
             _isProcessing = false;
             _lastScannedAttendee = null;
+            _scanningEnabled = true;
           });
+          // Restart camera for next scan
+          await cameraController.start();
         }
       }
+      break;
     }
   }
 
@@ -147,7 +160,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
                       size: 40,
                     ),
                     title: Text(
-                      _lastScannedAttendee!['name'] ?? 'Attendee',
+                      _lastScannedAttendee?['name'] ?? 'Attendee',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -155,7 +168,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
                       ),
                     ),
                     subtitle: Text(
-                      _lastScannedAttendee!['email'] ?? '',
+                      _lastScannedAttendee?['email'] ?? '',
                       style: const TextStyle(color: Colors.grey, fontSize: 14),
                     ),
                   )

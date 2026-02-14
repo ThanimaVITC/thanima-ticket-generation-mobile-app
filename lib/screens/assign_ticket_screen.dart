@@ -22,6 +22,7 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
   Map<String, dynamic>? _selectedRegistration;
   MobileScannerController? _cameraController;
   bool _isScanning = false;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
   void _startScanning() {
     setState(() {
       _isScanning = true;
+      _isProcessing = false;
       _cameraController = MobileScannerController();
     });
   }
@@ -89,14 +91,24 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
     _cameraController?.dispose();
     setState(() {
       _isScanning = false;
+      _isProcessing = false;
       _cameraController = null;
     });
   }
 
   Future<void> _processQrCode(BarcodeCapture capture) async {
+    if (_isProcessing) return;
+
     final List<Barcode> barcodes = capture.barcodes;
     for (final barcode in barcodes) {
       if (barcode.rawValue == null || _selectedRegistration == null) continue;
+
+      setState(() {
+        _isProcessing = true;
+      });
+
+      // Stop camera immediately after detection
+      await _cameraController?.stop();
 
       final qrPayload = barcode.rawValue!;
 
@@ -117,12 +129,17 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
               backgroundColor: Colors.red,
             ),
           );
+          // Restart camera to allow scanning another ticket
+          setState(() {
+            _isProcessing = false;
+          });
+          await _cameraController?.start();
           continue;
         }
 
         await _apiService.assignQrPayload(
           widget.eventId,
-          _selectedRegistration!['_id'],
+          _selectedRegistration?['_id'] ?? '',
           qrPayload,
         );
 
@@ -130,7 +147,7 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Ticket assigned to ${_selectedRegistration!['name']}',
+                'Ticket assigned to ${_selectedRegistration?['name'] ?? 'User'}',
               ),
               backgroundColor: Colors.green,
             ),
@@ -152,6 +169,11 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
             SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
           );
         }
+        // Restart camera on error
+        setState(() {
+          _isProcessing = false;
+        });
+        await _cameraController?.start();
       }
       break;
     }
@@ -302,7 +324,8 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
                 ),
         ),
         if (_selectedRegistration != null &&
-            _selectedRegistration!['qrPayload'] == null)
+            (_selectedRegistration!['qrPayload'] == null ||
+                _selectedRegistration!['qrPayload'].toString().isEmpty))
           Container(
             padding: const EdgeInsets.all(16),
             color: const Color(0xFF1E293B),
@@ -318,7 +341,7 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
                         style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                       Text(
-                        _selectedRegistration!['name'] ?? '',
+                        _selectedRegistration?['name'] ?? '',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -376,7 +399,7 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
             children: [
               Text(
                 _selectedRegistration != null
-                    ? 'Assigning to: ${_selectedRegistration!['name']}'
+                    ? 'Assigning to: ${_selectedRegistration?['name'] ?? 'Unknown'}'
                     : 'Select a user first',
                 style: const TextStyle(
                   color: Colors.white,
@@ -385,11 +408,16 @@ class _AssignTicketScreenState extends State<AssignTicketScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Scan the QR code from the user\'s ticket',
-                style: TextStyle(color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
+              if (_isProcessing)
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                )
+              else
+                const Text(
+                  'Scan the QR code from the user\'s ticket',
+                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
             ],
           ),
         ),
