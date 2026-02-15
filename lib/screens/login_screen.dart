@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ).login(_emailController.text, _passwordController.text);
       print('Login successful');
 
-      // Navigate back to AuthWrapper which will show the dashboard
+      await Future.delayed(Duration.zero);
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {

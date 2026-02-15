@@ -9,7 +9,7 @@ class ApiService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   // Default fallback if nothing is saved
-  static const String defaultUrl = 'http://172.20.80.212:3000/api';
+  static const String defaultUrl = 'https://ticketing.thanimavitc.site/api';
 
   Future<String> _getBaseUrl() async {
     final url = await _storage.read(key: 'server_url');
