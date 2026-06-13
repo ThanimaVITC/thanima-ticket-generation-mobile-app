@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _apiService = ApiService(); // To access storage methods
   bool _isLoading = false;
   bool _isInit = true;
+  bool _obscurePassword = true;
 
   @override
   void didChangeDependencies() {
@@ -191,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Password',
@@ -203,6 +204,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderSide: BorderSide.none,
                     ),
                     prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
