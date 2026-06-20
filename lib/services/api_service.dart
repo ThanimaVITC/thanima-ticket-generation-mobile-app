@@ -8,22 +8,45 @@ import '../models/registration.dart';
 class ApiService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  // Default fallback if nothing is saved
-  static const String defaultUrl = 'https://ticketing.thanimavitc.site/api';
+  // Simple in-memory SWR cache. Read methods write their last result here so
+  // screens can render it instantly via ApiService.peek(key) while a fresh
+  // request runs in the background.
+  static final Map<String, dynamic> _cache = {};
+  static dynamic peek(String key) => _cache[key];
 
-  Future<String> _getBaseUrl() async {
-    final url = await _storage.read(key: 'server_url');
-    // Ensure no trailing slash
-    final cleanUrl = (url ?? defaultUrl).replaceAll(RegExp(r'/$'), '');
-    // Ensure it ends with /api if not present?
-    // The user input should be "http://ip:port", we append "/api"
-    // Or we expect user to enter full api path?
-    // Let's assume user enters "http://192.168.1.5:3000". We append "/api".
+  // Production endpoint, used by default in normal/release runs.
+  static const String onlineUrl = 'https://ticketing.thanimavitc.site/api';
 
+  // Optional compile-time override for local development. Provide it with:
+  //   flutter run --dart-define=BASE_URL=http://192.168.1.5:3000
+  // When set, it takes precedence over any saved server URL so a local run
+  // reliably hits the dev server even after a prior login stored a URL.
+  static const String _envBaseUrl = String.fromEnvironment('BASE_URL');
+
+  // Whether a compile-time BASE_URL override was supplied.
+  static bool get hasEnvOverride => _envBaseUrl.trim().isNotEmpty;
+
+  // The effective default URL: the compile-time override if given, else online.
+  static String get defaultUrl =>
+      hasEnvOverride ? _normalizeUrl(_envBaseUrl) : onlineUrl;
+
+  // Normalize a base URL: trim, drop a trailing slash, ensure it ends with /api.
+  // Accepts either "http://host:3000" or "http://host:3000/api".
+  static String _normalizeUrl(String url) {
+    final cleanUrl = url.trim().replaceAll(RegExp(r'/$'), '');
     if (cleanUrl.endsWith('/api')) {
       return cleanUrl;
     }
     return '$cleanUrl/api';
+  }
+
+  Future<String> _getBaseUrl() async {
+    // A compile-time override always wins (debug/local convenience).
+    if (hasEnvOverride) {
+      return _normalizeUrl(_envBaseUrl);
+    }
+    final url = await _storage.read(key: 'server_url');
+    return _normalizeUrl(url ?? onlineUrl);
   }
 
   Future<String?> getServerUrl() async {
@@ -123,7 +146,9 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return (data['events'] as List).map((e) => Event.fromJson(e)).toList();
+      final list = (data['events'] as List).map((e) => Event.fromJson(e)).toList();
+      _cache['events'] = list;
+      return list;
     } else {
       throw Exception('Failed to load events');
     }
@@ -139,7 +164,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      _cache['event:$eventId'] = data;
+      return data;
     } else {
       throw Exception('Failed to load event details');
     }
@@ -208,7 +235,9 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return List<Map<String, dynamic>>.from(data['registrations']);
+      final list = List<Map<String, dynamic>>.from(data['registrations']);
+      _cache['regs:$eventId'] = list;
+      return list;
     } else {
       throw Exception('Failed to load registrations');
     }
@@ -263,6 +292,63 @@ class ApiService {
       }
     }
     return null;
+  }
+
+  // Fetch food sessions for an event. Pass activeOnly to only get the
+  // sessions an admin has made visible (what the scanner should show).
+  Future<List<Map<String, dynamic>>> getFoodSessions(
+    String eventId, {
+    bool activeOnly = true,
+  }) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final query = activeOnly ? '?activeOnly=1' : '';
+    final response = await http.get(
+      Uri.parse('$baseUrl/events/$eventId/food-sessions$query'),
+      headers: {'Cookie': 'auth-token=$token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final list = List<Map<String, dynamic>>.from(data['sessions'] ?? []);
+      _cache['food:$eventId'] = list;
+      return list;
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to load food sessions');
+    }
+  }
+
+  // Scan an attendee's ticket QR into a food session. Known outcomes
+  // (admitted / already scanned / full / wrong event) come back as JSON with
+  // different status codes, so we return both the status and the parsed body
+  // and let the screen decide how to render rather than throwing.
+  Future<Map<String, dynamic>> scanFoodSession(
+    String eventId,
+    String sessionId,
+    String encryptedData,
+  ) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/events/$eventId/food-sessions/$sessionId/scan'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({'encryptedData': encryptedData}),
+    );
+
+    Map<String, dynamic> body;
+    try {
+      body = Map<String, dynamic>.from(jsonDecode(response.body));
+    } catch (_) {
+      body = {'error': 'Unexpected server response'};
+    }
+
+    return {'statusCode': response.statusCode, 'data': body};
   }
 
   Future<Map<String, dynamic>> verifyTicket(

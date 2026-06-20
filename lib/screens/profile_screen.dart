@@ -7,15 +7,52 @@ import 'login_screen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  static const String _version = 'v1.4';
+  static const String _version = 'v2.0.1';
   static const String _githubUrl =
       'https://github.com/ThanimaVITC/thanima-ticket-generation-mobile-app';
+  static const String _supportEmail = 'tech@thanimavitc.site';
+  static const String _websiteUrl = 'https://thanimavitc.site';
+  static const String _appPageUrl =
+      'https://thanimavitc.github.io/thanima-ticket-generation-mobile-app/';
+
+  Future<void> _contactSupport() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      query: 'subject=${Uri.encodeComponent('Thanima App — Feedback / Issue')}',
+    );
+    await launchUrl(uri);
+  }
 
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  Widget _linkButton(IconData icon, String label, String url) {
+    return Material(
+      color: Colors.white.withOpacity(0.07),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => _launchUrl(url),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white70, size: 18),
+              const SizedBox(width: 8),
+              Text(label, style: const TextStyle(color: Colors.white, fontSize: 14)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -74,6 +111,58 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               const Spacer(),
+              // Support card
+              Material(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: _contactSupport,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.purpleAccent.withOpacity(0.4)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.mail_outline, color: Colors.purpleAccent, size: 24),
+                        SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Need help?',
+                                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'For any issues, updates or feature requests about the app, contact $_supportEmail',
+                                style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.open_in_new, color: Colors.grey, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Links: App Page (full width), then Website | GitHub
+              _linkButton(Icons.open_in_browser, 'App Page', _appPageUrl),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _linkButton(Icons.public, 'Website', _websiteUrl)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _linkButton(Icons.code, 'GitHub', _githubUrl)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Sign out
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -103,31 +192,14 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Center(
-                child: TextButton(
-                  onPressed: () => _launchUrl(_githubUrl),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.code, color: Colors.grey, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'GitHub Repository',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Center(
                 child: Text(
                   _version,
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
             ],
           ),
         ),

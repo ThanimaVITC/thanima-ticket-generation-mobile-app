@@ -30,17 +30,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loadServerUrl() async {
-    final url = await _apiService.getServerUrl();
-    if (!mounted) return; // Check mounted
-    if (url != null) {
-      setState(() {
-        _serverUrlController.text = url;
-      });
-    } else {
+    // When a compile-time BASE_URL override is active it wins regardless of any
+    // saved value, so show that as the effective URL.
+    if (ApiService.hasEnvOverride) {
+      if (!mounted) return;
       setState(() {
         _serverUrlController.text = ApiService.defaultUrl;
       });
+      return;
     }
+    final url = await _apiService.getServerUrl();
+    if (!mounted) return; // Check mounted
+    setState(() {
+      _serverUrlController.text = url ?? ApiService.defaultUrl;
+    });
   }
 
   Future<void> _login() async {

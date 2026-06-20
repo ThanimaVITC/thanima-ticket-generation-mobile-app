@@ -25,7 +25,21 @@ class _AttendeesListScreenState extends State<AttendeesListScreen> with SingleTi
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Seed from cache for an instant render, then refresh in the background.
+    final cached = ApiService.peek('event:${widget.eventId}');
+    if (cached is Map<String, dynamic>) {
+      _applyDetails(cached);
+      _isLoading = false;
+    }
     _loadRegistrations();
+  }
+
+  void _applyDetails(Map<String, dynamic> details) {
+    final List<dynamic> regsData = details['registrations'] ?? [];
+    final all = regsData.map((r) => Registration.fromJson(r)).toList();
+    _allRegistrations = all;
+    _attendedRegistrations = all.where((r) => r.attended).toList();
+    _pendingRegistrations = all.where((r) => !r.attended).toList();
   }
 
   @override
@@ -36,23 +50,19 @@ class _AttendeesListScreenState extends State<AttendeesListScreen> with SingleTi
 
   Future<void> _loadRegistrations() async {
     setState(() {
-      _isLoading = true;
+      if (_allRegistrations.isEmpty) _isLoading = true;
       _error = null;
     });
 
     try {
       final details = await _apiService.getEventDetails(widget.eventId);
-      final List<dynamic> regsData = details['registrations'];
-      
-      final all = regsData.map((r) => Registration.fromJson(r)).toList();
-      
+      if (!mounted) return;
       setState(() {
-        _allRegistrations = all;
-        _attendedRegistrations = all.where((r) => r.attended).toList();
-        _pendingRegistrations = all.where((r) => !r.attended).toList();
+        _applyDetails(details);
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../providers/auth_provider.dart';
 import 'event_detail_screen.dart';
 import 'profile_screen.dart';
+import 'info_screen.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -43,6 +44,16 @@ class _EventsScreenState extends State<EventsScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'How it works',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InfoScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.account_circle),
             onPressed: () {
               Navigator.push(
@@ -55,12 +66,13 @@ class _EventsScreenState extends State<EventsScreen> {
       ),
       body: FutureBuilder<List<Event>>(
         future: _eventsFuture,
+        initialData: ApiService.peek('events') as List<Event>?,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
+          if (snapshot.hasError && !snapshot.hasData) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

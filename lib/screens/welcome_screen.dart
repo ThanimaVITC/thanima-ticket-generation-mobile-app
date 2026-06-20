@@ -58,7 +58,7 @@ class WelcomeScreen extends StatelessWidget {
                   colors: [Colors.purple, Colors.pink],
                 ).createShader(bounds),
                 child: const Text(
-                  'Attendance App',
+                  'Ticketing App',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
@@ -127,7 +127,7 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
 
               const Text(
-                'v1.4',
+                'v2.0.1',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],

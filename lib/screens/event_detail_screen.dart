@@ -7,6 +7,8 @@ import 'manual_attendance_screen.dart';
 import 'attendees_list_screen.dart';
 import 'assign_ticket_screen.dart';
 import 'verify_ticket_screen.dart';
+import 'food_sessions_screen.dart';
+import 'info_screen.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final String eventId;
@@ -35,29 +37,40 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Render the last cached payload instantly while a fresh one loads.
+    final cached = ApiService.peek('event:${widget.eventId}') as Map<String, dynamic>?;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text(
-          'Event Details',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Event Details', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'How it works',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InfoScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _eventDetailsFuture,
+        initialData: cached,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          // Spinner only when there is nothing (no cache) to show yet.
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
+          if (snapshot.hasError && !snapshot.hasData) {
             return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.red),
-              ),
+              child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
             );
           }
 
@@ -66,7 +79,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           }
 
           final eventData = snapshot.data!['event'];
-          final stats = snapshot.data!['stats'];
+          final stats = snapshot.data!['stats'] as Map<String, dynamic>;
           final event = Event.fromJson(eventData);
 
           return RefreshIndicator(
@@ -83,136 +96,71 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   // Event Info
                   Text(
                     event.title,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Colors.purple,
-                      ),
+                      const Icon(Icons.calendar_today, size: 16, color: Colors.purpleAccent),
                       const SizedBox(width: 8),
                       Text(
                         DateFormat('MMM d, y • h:mm a').format(event.date),
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
+                        style: const TextStyle(color: Colors.grey, fontSize: 15),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
-                  // Stats Cards
+                  // Stats
                   Row(
                     children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Registrations',
-                          stats['totalRegistrations'].toString(),
-                          Colors.blue,
-                        ),
-                      ),
+                      Expanded(child: _buildStatCard('Registrations', stats['totalRegistrations'].toString(), Colors.blue)),
                       const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Attendance',
-                          stats['totalAttendance'].toString(),
-                          Colors.green,
-                        ),
-                      ),
+                      Expanded(child: _buildStatCard('Attendance', stats['totalAttendance'].toString(), Colors.green)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildStatCard(
-                    'Attendance Rate',
-                    '${stats['attendanceRate']}%',
-                    Colors.purple,
-                  ),
+                  if (event.foodSessionsEnabled)
+                    Row(
+                      children: [
+                        Expanded(child: _buildStatCard('Attendance Rate', '${stats['attendanceRate']}%', Colors.purple)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildStatCard('Food Scanned', '${stats['foodScanRate'] ?? 0}%', Colors.pink)),
+                      ],
+                    )
+                  else
+                    _buildStatCard('Attendance Rate', '${stats['attendanceRate']}%', Colors.purple),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 28),
                   const Text(
-                    'Actions',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    'ACTIONS',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey, letterSpacing: 1.5),
                   ),
+                  const SizedBox(height: 12),
 
-                  const SizedBox(height: 16),
-                  _buildActionTile(
-                    'Assign Tickets',
-                    'Assign QR tickets to registered users',
-                    Icons.qr_code,
-                    Colors.purple,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            AssignTicketScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
-                  ),
-
-                  _buildActionTile(
-                    'Scan QR Code',
-                    'Scan attendee QR code to mark attendance',
-                    Icons.qr_code_scanner,
-                    Colors.orange,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            QrScanScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
-                  ),
-
-                  _buildActionTile(
-                    'Manual Attendance',
-                    'Mark attendance by searching name/reg no',
-                    Icons.edit_note,
-                    Colors.blue,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ManualAttendanceScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
-                  ),
-                  _buildActionTile(
-                    'View Attendees',
-                    'List all registrations and attendance status',
-                    Icons.people,
-                    Colors.teal,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            AttendeesListScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
-                  ),
-                  _buildActionTile(
-                    'Verify Ticket',
-                    'Scan and verify ticket without marking attendance',
-                    Icons.verified_user,
-                    Colors.indigo,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            VerifyTicketScreen(eventId: widget.eventId),
-                      ),
-                    ).then((_) => _refreshEventDetails()),
+                  // Action grid (no per-item heavy card; clean tiles)
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 2.2,
+                    children: [
+                      _actionTile('Scan QR', Icons.qr_code_scanner, Colors.orangeAccent,
+                          () => _go(QrScanScreen(eventId: widget.eventId))),
+                      _actionTile('Verify Ticket', Icons.verified_user, Colors.indigoAccent,
+                          () => _go(VerifyTicketScreen(eventId: widget.eventId))),
+                      _actionTile('Manual', Icons.how_to_reg, Colors.blueAccent,
+                          () => _go(ManualAttendanceScreen(eventId: widget.eventId))),
+                      _actionTile('Attendees', Icons.groups, Colors.tealAccent,
+                          () => _go(AttendeesListScreen(eventId: widget.eventId))),
+                      _actionTile('Assign Tickets', Icons.qr_code_2, Colors.purpleAccent,
+                          () => _go(AssignTicketScreen(eventId: widget.eventId))),
+                      if (event.foodSessionsEnabled)
+                        _actionTile('Food Sessions', Icons.restaurant, Colors.pinkAccent,
+                            () => _go(FoodSessionsScreen(eventId: widget.eventId))),
+                    ],
                   ),
                 ],
               ),
@@ -221,6 +169,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         },
       ),
     );
+  }
+
+  void _go(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen)).then((_) => _refreshEventDetails());
   }
 
   Widget _buildStatCard(String title, String value, Color color) {
@@ -236,58 +188,40 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         children: [
           Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value, style: TextStyle(color: color, fontSize: 28, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Widget _buildActionTile(
-    String title,
-    String subtitle,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey)),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.grey,
-          size: 16,
-        ),
+  Widget _actionTile(String title, IconData icon, Color color, VoidCallback onTap) {
+    return Material(
+      color: const Color(0xFF1E293B),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
