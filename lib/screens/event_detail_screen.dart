@@ -10,6 +10,7 @@ import 'verify_ticket_screen.dart';
 import 'food_sessions_screen.dart';
 import 'user_pool_screen.dart';
 import 'user_pool_history_screen.dart';
+import 'unpaid_screen.dart';
 import '../services/nfc_service.dart';
 import 'info_screen.dart';
 
@@ -145,9 +146,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   else
                     _buildStatCard('Attendance Rate', '${stats['attendanceRate']}%', Colors.purple),
 
-                  if (event.userPoolEnabled) ...[
+                  if (event.userPoolEnabled || event.unpaidEnabled) ...[
                     const SizedBox(height: 16),
-                    _buildStatCard('In Pool Now', '${stats['userPoolCount'] ?? 0}', Colors.cyanAccent),
+                    Row(
+                      children: [
+                        if (event.userPoolEnabled)
+                          Expanded(child: _buildStatCard('In Pool Now', '${stats['userPoolCount'] ?? 0}', Colors.cyanAccent)),
+                        if (event.userPoolEnabled && event.unpaidEnabled) const SizedBox(width: 16),
+                        if (event.unpaidEnabled)
+                          Expanded(child: _buildStatCard('Unpaid', '${stats['unpaidCount'] ?? 0}', Colors.orangeAccent)),
+                      ],
+                    ),
                   ],
 
                   const SizedBox(height: 28),
@@ -186,6 +195,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       if (event.userPoolEnabled)
                         _actionTile('Pool History', Icons.history, Colors.amberAccent,
                             () => _go(UserPoolHistoryScreen(eventId: widget.eventId))),
+                      if (event.unpaidEnabled)
+                        _actionTile('Unpaid', Icons.money_off, Colors.orangeAccent,
+                            () => _go(UnpaidScreen(eventId: widget.eventId))),
                     ],
                   ),
                 ],

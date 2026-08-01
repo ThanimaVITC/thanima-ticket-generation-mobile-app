@@ -6,6 +6,7 @@ class Event {
   final String? location;
   final bool foodSessionsEnabled;
   final bool userPoolEnabled;
+  final bool unpaidEnabled;
 
   Event({
     required this.id,
@@ -15,6 +16,7 @@ class Event {
     this.location,
     this.foodSessionsEnabled = false,
     this.userPoolEnabled = false,
+    this.unpaidEnabled = false,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class Event {
       location: json['location'],
       foodSessionsEnabled: json['foodSessionsEnabled'] ?? false,
       userPoolEnabled: json['userPoolEnabled'] ?? false,
+      unpaidEnabled: json['unpaidEnabled'] ?? false,
     );
   }
 }

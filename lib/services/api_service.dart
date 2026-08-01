@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -13,6 +14,31 @@ class ApiService {
   // request runs in the background.
   static final Map<String, dynamic> _cache = {};
   static dynamic peek(String key) => _cache[key];
+
+  // Disk-backed copy of a cached list, so a screen renders instantly on the
+  // first open after a cold start too — not just on revisits within a session.
+  // Uses the secure storage already in the app rather than adding a package.
+  Future<void> _persist(String key, Object value) async {
+    try {
+      await _storage.write(key: 'cache:$key', value: jsonEncode(value));
+    } catch (_) {
+      // A cache write is never worth failing a request over.
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> readPersistedList(String key) async {
+    try {
+      final raw = await _storage.read(key: 'cache:$key');
+      if (raw == null) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return null;
+      return decoded
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
 
   // Production endpoint, used by default in normal/release runs.
   static const String onlineUrl = 'https://ticketing.thanimavitc.site/api';
@@ -475,6 +501,51 @@ class ApiService {
       body = {'error': e.toString().replaceAll('Exception: ', '')};
     }
     return {'statusCode': response.statusCode, 'data': body};
+  }
+
+  // ---- Unpaid list ----------------------------------------------------
+
+  Future<List<Map<String, dynamic>>> getUnpaid(String eventId) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/events/$eventId/unpaid'),
+      headers: {'Cookie': 'auth-token=$token'},
+    );
+
+    final data = _decodeJson(response);
+
+    if (response.statusCode == 200) {
+      final list = List<Map<String, dynamic>>.from(data['entries'] ?? []);
+      _cache['unpaid:$eventId'] = list;
+      unawaited(_persist('unpaid:$eventId', list));
+      return list;
+    }
+
+    throw Exception(data['error'] ?? 'Failed to load the unpaid list');
+  }
+
+  // source is 'manual' when staff typed it, 'ocr' when it came off a card.
+  Future<Map<String, dynamic>> addUnpaid(
+    String eventId,
+    String name,
+    String regNo, {
+    String source = 'manual',
+  }) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/events/$eventId/unpaid'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({'name': name, 'regNo': regNo, 'source': source}),
+    );
+
+    return _statusAndBody(response);
   }
 
   Future<Map<String, dynamic>> verifyTicket(
