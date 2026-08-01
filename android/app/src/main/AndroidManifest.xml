@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- User Pool: reads the ID card's tag UID. Deliberately no
+         <uses-feature android:required="true"> so the app still installs on
+         phones without NFC — the pool screens degrade with a message. -->
+    <uses-permission android:name="android.permission.NFC"/>
     <application
         android:label="Thanima Ticketing"
         android:name="${applicationName}"

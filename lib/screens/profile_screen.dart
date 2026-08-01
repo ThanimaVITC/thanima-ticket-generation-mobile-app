@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:nfc_manager/nfc_manager.dart';
 import '../providers/auth_provider.dart';
+import '../services/nfc_service.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -110,6 +112,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
+              const _NfcStatusButton(),
               const Spacer(),
               // Support card
               Material(
@@ -200,6 +203,136 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tells staff whether this phone can run the User Pool door flow. Checks on
+/// open; tap to re-check after toggling NFC in system settings.
+class _NfcStatusButton extends StatefulWidget {
+  const _NfcStatusButton();
+
+  @override
+  State<_NfcStatusButton> createState() => _NfcStatusButtonState();
+}
+
+class _NfcStatusButtonState extends State<_NfcStatusButton> {
+  final NfcService _nfcService = NfcService();
+
+  NfcAvailability? _state;
+  bool _checking = true;
+  bool _supported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    final state = await _nfcService.availability();
+    final reason = await _nfcService.unavailableReason();
+    if (!mounted) return;
+    setState(() {
+      _state = state;
+      _supported = reason == null;
+      _checking = false;
+    });
+  }
+
+  ({IconData icon, Color color, String title, String detail}) get _display {
+    if (_checking) {
+      return (
+        icon: Icons.hourglass_empty,
+        color: Colors.grey,
+        title: 'Checking NFC…',
+        detail: '',
+      );
+    }
+    switch (_state) {
+      case NfcAvailability.enabled:
+        return (
+          icon: Icons.contactless,
+          color: Colors.green,
+          title: 'NFC supported',
+          detail: 'This phone can add and remove people from the User Pool.',
+        );
+      case NfcAvailability.disabled:
+        return (
+          icon: Icons.contactless_outlined,
+          color: Colors.orange,
+          title: 'NFC is turned off',
+          detail: 'Enable NFC in system settings, then tap here to re-check.',
+        );
+      case NfcAvailability.unsupported:
+      case null:
+        return (
+          icon: Icons.block,
+          color: Colors.red,
+          title: 'NFC not supported',
+          detail: _supported
+              ? ''
+              : 'ID card scanning is unavailable on this device. You can still view the pool list.',
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _display;
+
+    return Material(
+      color: const Color(0xFF1E293B),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: _checking ? null : _check,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: d.color.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Icon(d.icon, color: d.color, size: 24),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      d.title,
+                      style: TextStyle(
+                        color: d.color,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (d.detail.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        d.detail,
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 13, height: 1.4),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (_checking)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(Icons.refresh, color: Colors.grey, size: 18),
             ],
           ),
         ),

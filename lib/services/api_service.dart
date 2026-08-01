@@ -351,6 +351,132 @@ class ApiService {
     return {'statusCode': response.statusCode, 'data': body};
   }
 
+  // ---- User Pool ------------------------------------------------------
+  // The add/lookup calls return {statusCode, data} rather than throwing,
+  // because their 4xx bodies carry meaningful outcomes (alreadyInPool,
+  // cardInUse, found:false) that the screens render differently — same shape
+  // as scanFoodSession above.
+
+  // A server that doesn't know a route answers with its HTML 404 page, not
+  // JSON — jsonDecode then throws a FormatException full of markup, which is
+  // what staff would see on screen. Decode defensively and say something
+  // actionable instead.
+  Map<String, dynamic> _decodeJson(http.Response response) {
+    final body = response.body.trimLeft();
+    final looksLikeJson = body.startsWith('{') || body.startsWith('[');
+
+    if (!looksLikeJson) {
+      if (response.statusCode == 404) {
+        throw Exception(
+          'This feature is not available on the server yet. '
+          'The web app needs to be redeployed with the User Pool update.',
+        );
+      }
+      throw Exception(
+        'Server returned an unexpected response (HTTP ${response.statusCode}).',
+      );
+    }
+
+    try {
+      return Map<String, dynamic>.from(jsonDecode(body));
+    } catch (_) {
+      throw Exception(
+        'Server returned malformed data (HTTP ${response.statusCode}).',
+      );
+    }
+  }
+
+  // activeOnly=true -> who is in the pool now; false -> full usage history.
+  Future<List<Map<String, dynamic>>> getUserPool(
+    String eventId, {
+    bool activeOnly = true,
+  }) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final status = activeOnly ? 'active' : 'all';
+    final response = await http.get(
+      Uri.parse('$baseUrl/events/$eventId/user-pool?status=$status'),
+      headers: {'Cookie': 'auth-token=$token'},
+    );
+
+    final data = _decodeJson(response);
+
+    if (response.statusCode == 200) {
+      final list = List<Map<String, dynamic>>.from(data['entries'] ?? []);
+      _cache['pool:$eventId:$status'] = list;
+      return list;
+    }
+
+    throw Exception(data['error'] ?? 'Failed to load the user pool');
+  }
+
+  Future<Map<String, dynamic>> addToUserPool(
+    String eventId,
+    String encryptedData,
+    String nfcId,
+  ) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/events/$eventId/user-pool/add'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({'encryptedData': encryptedData, 'nfcId': nfcId}),
+    );
+
+    return _statusAndBody(response);
+  }
+
+  Future<Map<String, dynamic>> lookupPoolByNfc(
+    String eventId,
+    String nfcId,
+  ) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.get(
+      Uri.parse(
+        '$baseUrl/events/$eventId/user-pool/lookup?nfcId=${Uri.encodeQueryComponent(nfcId)}',
+      ),
+      headers: {'Cookie': 'auth-token=$token'},
+    );
+
+    return _statusAndBody(response);
+  }
+
+  Future<Map<String, dynamic>> removeFromUserPool(
+    String eventId,
+    String entryId,
+  ) async {
+    final token = await getToken();
+    final baseUrl = await _getBaseUrl();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/events/$eventId/user-pool/remove'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': 'auth-token=$token',
+      },
+      body: jsonEncode({'entryId': entryId}),
+    );
+
+    return _statusAndBody(response);
+  }
+
+  Map<String, dynamic> _statusAndBody(http.Response response) {
+    Map<String, dynamic> body;
+    try {
+      body = _decodeJson(response);
+    } catch (e) {
+      body = {'error': e.toString().replaceAll('Exception: ', '')};
+    }
+    return {'statusCode': response.statusCode, 'data': body};
+  }
+
   Future<Map<String, dynamic>> verifyTicket(
     String qrPayload,
     String eventId,

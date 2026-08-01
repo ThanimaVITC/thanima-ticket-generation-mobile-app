@@ -42,6 +42,7 @@ dependencies:
   permission_handler: ^12.0.1
   url_launcher: ^6.2.0
   audioplayers: ^6.4.0
+  nfc_manager: ^4.1.1
 
 dev_dependencies:
   flutter_test:

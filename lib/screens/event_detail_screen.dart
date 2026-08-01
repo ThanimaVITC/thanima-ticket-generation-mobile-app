@@ -8,6 +8,9 @@ import 'attendees_list_screen.dart';
 import 'assign_ticket_screen.dart';
 import 'verify_ticket_screen.dart';
 import 'food_sessions_screen.dart';
+import 'user_pool_screen.dart';
+import 'user_pool_history_screen.dart';
+import '../services/nfc_service.dart';
 import 'info_screen.dart';
 
 class EventDetailScreen extends StatefulWidget {
@@ -21,12 +24,23 @@ class EventDetailScreen extends StatefulWidget {
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
   final ApiService _apiService = ApiService();
+  final NfcService _nfcService = NfcService();
   late Future<Map<String, dynamic>> _eventDetailsFuture;
+
+  // Null = NFC usable. The User Pool tile dims when this is set, since adding
+  // and removing both need a card reader — the list stays viewable.
+  String? _nfcReason;
 
   @override
   void initState() {
     super.initState();
     _refreshEventDetails();
+    _checkNfc();
+  }
+
+  Future<void> _checkNfc() async {
+    final reason = await _nfcService.unavailableReason();
+    if (mounted) setState(() => _nfcReason = reason);
   }
 
   void _refreshEventDetails() {
@@ -131,6 +145,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   else
                     _buildStatCard('Attendance Rate', '${stats['attendanceRate']}%', Colors.purple),
 
+                  if (event.userPoolEnabled) ...[
+                    const SizedBox(height: 16),
+                    _buildStatCard('In Pool Now', '${stats['userPoolCount'] ?? 0}', Colors.cyanAccent),
+                  ],
+
                   const SizedBox(height: 28),
                   const Text(
                     'ACTIONS',
@@ -160,6 +179,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       if (event.foodSessionsEnabled)
                         _actionTile('Food Sessions', Icons.restaurant, Colors.pinkAccent,
                             () => _go(FoodSessionsScreen(eventId: widget.eventId))),
+                      if (event.userPoolEnabled)
+                        _actionTile('User Pool', Icons.group_add, Colors.cyanAccent,
+                            () => _go(UserPoolScreen(eventId: widget.eventId)),
+                            dimmed: _nfcReason != null),
+                      if (event.userPoolEnabled)
+                        _actionTile('Pool History', Icons.history, Colors.amberAccent,
+                            () => _go(UserPoolHistoryScreen(eventId: widget.eventId))),
                     ],
                   ),
                 ],
@@ -194,9 +220,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _actionTile(String title, IconData icon, Color color, VoidCallback onTap) {
+  /// [dimmed] marks a tile whose main actions are unavailable on this device.
+  /// It stays tappable — the destination still has read-only value — but reads
+  /// as inactive and carries a small "No NFC" marker.
+  Widget _actionTile(String title, IconData icon, Color color, VoidCallback onTap,
+      {bool dimmed = false}) {
     return Material(
-      color: const Color(0xFF1E293B),
+      color: dimmed ? const Color(0xFF17212F) : const Color(0xFF1E293B),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -205,18 +235,34 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: dimmed ? 0.03 : 0.06)),
           ),
           child: Row(
             children: [
-              Icon(icon, color: color, size: 24),
+              Icon(icon, color: dimmed ? Colors.white24 : color, size: 24),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                          color: dimmed ? Colors.white38 : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (dimmed)
+                      const Text(
+                        'No NFC · view only',
+                        style: TextStyle(color: Colors.white24, fontSize: 11),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
                 ),
               ),
             ],
